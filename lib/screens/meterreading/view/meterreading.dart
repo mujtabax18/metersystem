@@ -2,47 +2,57 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../models/meter.dart';
+import '../../../services/database_service.dart';
 import '../widgets/addreading.dart';
 import '../widgets/deletereading.dart';
 
 class MeterDetailPage extends StatefulWidget {
   final Meter meter;
-  final Function(Meter) onUpdate;
 
-  const MeterDetailPage({Key? key, required this.meter, required this.onUpdate}) : super(key: key);
+
+  const MeterDetailPage({Key? key, required this.meter}) : super(key: key);
 
   @override
   State<MeterDetailPage> createState() => _MeterDetailPageState();
 }
 
 class _MeterDetailPageState extends State<MeterDetailPage> {
-  void _addReading({required Reading reading}) {
-    // Capture the current date
+  List<Reading> _readings = [];
 
-    // Check if the readings list is initialized, if not initialize it
-    if (widget.meter.readings == null) {
-      widget.meter.readings = [];
-    }
+  @override
+  void initState() {
+    super.initState();
+    _loadReadings();
+  }
 
-    List<Reading> templist = widget.meter.readings;
-    // Add a new reading with value and current date
+  void _setBaseline(int reading) async {
+    await DatabaseService().updateMeterBaseline(widget.meter.id!, reading);
     setState(() {
-      templist.add(reading); // Safely add reading
-      widget.meter.readings = templist;
+      widget.meter.baseline = reading; // Update the meter baseline in the UI
     });
-
-    // Notify parent to save the updated meter
-    widget.onUpdate(widget.meter);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Baseline set to ${reading}')),
+    );
+  }
+  Future<void> _loadReadings() async {
+    List<Reading> readings = await DatabaseService().getReadingsForMeter(widget.meter.id!);
+    setState(() {
+      _readings = readings;
+    });
+  }
+  void _addReading({required int reading1}) async {
+    Reading newReading = Reading(value: reading1, date: DateTime.now(), meterId: widget.meter.id!);
+    await DatabaseService().addReading(newReading);
+    _loadReadings();
   }
 
-  void _setReadingBaseline({required int baseline}) {
-    if (baseline != null && baseline > 0) {
-      setState(() {
-        widget.meter.baseline = baseline;
-      });
-      widget.onUpdate(widget.meter); // Notify parent to save changes
-    }
+  void _deleteReading(int? id) async {
+    await DatabaseService().deleteReading(id, widget.meter.id!);
+    _loadReadings();
   }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -52,9 +62,9 @@ class _MeterDetailPageState extends State<MeterDetailPage> {
         onPressed: () {
           showAddReadingDialog(context, (reading) {
             if (widget.meter.baseline == null) {
-              _setReadingBaseline(baseline: reading.value);
+              _setBaseline(reading);
             }
-            _addReading(reading: reading); // Save the meter changes
+            _addReading(reading1: reading); // Save the meter changes
           });
         },
         child: const Icon(Icons.add),
@@ -71,13 +81,13 @@ class _MeterDetailPageState extends State<MeterDetailPage> {
             const SizedBox(height: 20),
             Expanded(
               child: ListView.builder(
-                itemCount: widget.meter.readings.length,
+                itemCount: _readings.length,
                 itemBuilder: (context, index) {
-                  final currentReading = widget.meter.readings[index].value;
-                  final previousReading = index > 0 ? widget.meter.readings[index - 1].value : null;
+                  final currentReading = _readings[index].value;
+                  final previousReading = index > 0 ? _readings[index - 1].value : null;
                   final diffFromYesterday = previousReading != null ? currentReading - previousReading : 0;
                   final diffFromBaseline = widget.meter.baseline != null ? currentReading - widget.meter.baseline! : null;
-                  String formattedDate = DateFormat('dd/MM/yyyy').format(widget.meter.readings[index].date);
+                  String formattedDate = DateFormat('dd/MM/yyyy').format(_readings[index].date);
                   return ListTile(
                     title: Text('Reading: $currentReading \nDate: ${formattedDate}'),
                     subtitle: Text(
@@ -88,7 +98,7 @@ class _MeterDetailPageState extends State<MeterDetailPage> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                            onPressed: () => _setReadingBaseline(baseline: currentReading),
+                            onPressed: () => _setBaseline(currentReading),
                             icon: Icon(
                               currentReading != widget.meter.baseline ? Icons.star_border : Icons.star,
                               color: Colors.yellow,
@@ -96,10 +106,8 @@ class _MeterDetailPageState extends State<MeterDetailPage> {
                         IconButton(
                             onPressed: () {
                               showDeleteReadingDialog(context, currentReading, () {
-                                setState(() {
-                                  widget.meter.readings.remove(currentReading); // Remove the selected reading
-                                });
-                                widget.onUpdate(widget.meter); // Save the meter changes
+                                _deleteReading(_readings[index].id,);
+                               _loadReadings();
                               });
                             },
                             icon: Icon(

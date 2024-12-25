@@ -1,9 +1,11 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:metersystem/screens/backup/view/backupScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../models/meter.dart';
+import '../../../services/database_service.dart';
 import '../../billwebview/view/meterwebview.dart';
 import '../../meterreading/view/meterreading.dart';
 import '../widgets/addMeterPopup.dart';
@@ -25,18 +27,18 @@ class _MeterListPageState extends State<MeterListPage> {
   }
 
   Future<void> _loadMeters() async {
-    final prefs = await SharedPreferences.getInstance();
-    final storedMeters = prefs.getString('meters');
-
+    List<Meter> meters1 = await DatabaseService().getAllMeters();
+    print(meters);
     setState(() {
-      meters = storedMeters != null ? List<Meter>.from(jsonDecode(storedMeters).map((e) => Meter.fromJson(e))) : [];
+      meters = meters1;
     });
   }
 
-  Future<void> _saveMeters() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('meters', jsonEncode(meters));
-  }
+
+  // Future<void> _saveMeters() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   await prefs.setString('meters', jsonEncode(meters));
+  // }
 
   void _navigateToMeter(Meter meter) {
     Navigator.push(
@@ -44,11 +46,12 @@ class _MeterListPageState extends State<MeterListPage> {
       MaterialPageRoute(
         builder: (context) => MeterDetailPage(
           meter: meter,
-          onUpdate: _updateMeter,
+
         ),
       ),
     );
   }
+
 
   void _navigateToMeterWebView(Meter meter) {
     Navigator.push(
@@ -59,30 +62,37 @@ class _MeterListPageState extends State<MeterListPage> {
         ),
       ),
     );
+  }  void _navigateToBackUPScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BackupRestoreScreen(
+
+        ),
+      ),
+    );
   }
 
-  void _updateMeter(Meter updatedMeter) {
-    // Update the meter in the list
-    setState(() {
-      final index = meters.indexWhere((m) => m.number == updatedMeter.number);
-      if (index != -1) {
-        meters[index] = updatedMeter;
-      }
-    });
-    _saveMeters();
-  }
+  // void _updateMeter(Meter updatedMeter) {
+  //   // Update the meter in the list
+  //   setState(() {
+  //     final index = meters.indexWhere((m) => m.number == updatedMeter.number);
+  //     if (index != -1) {
+  //       meters[index] = updatedMeter;
+  //     }
+  //   });
+  //   _saveMeters();
+  // }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Meters')),
+      appBar: AppBar(title: const Text('Meters'),actions: [IconButton(onPressed: ()=>_navigateToBackUPScreen(), icon: Icon(Icons.backup))],),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          showAddMeterDialog(context, (name, number) {
-            setState(() {
-              meters.add(Meter(name: name, number: number)); // Add new meter
-            });
-            _saveMeters(); // Save meters to persistent storage
+          showAddMeterDialog(context, (name, number) async {
+            await DatabaseService().addMeter(Meter(name: name, number: number));
+            _loadMeters();// Save meters to persistent storage
           });
         },
         child: const Icon(Icons.add),
@@ -99,11 +109,10 @@ class _MeterListPageState extends State<MeterListPage> {
               children: [
                 IconButton(
                     onPressed: () {
-                      showDeleteMeterDialog(context, meter.name, () {
-                        setState(() {
-                          meters.remove(meter); // Remove the selected meter
-                        });
-                        _saveMeters(); // Save changes to persistent storage
+                      showDeleteMeterDialog(context, meter.name, () async {
+                        await DatabaseService().deleteMeter(meter.id);
+                        _loadMeters();
+
                       });
                     },
                     icon: const Icon(Icons.delete, color: Colors.red)),

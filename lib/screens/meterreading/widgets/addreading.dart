@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:metersystem/models/meter.dart';
 
-void showAddReadingDialog(BuildContext context, Function(Reading reading) onAddReading) {
+void showAddReadingDialog(BuildContext context, Function(int reading) onAddReading) {
   final TextEditingController readingController = TextEditingController();
 
   showDialog(
@@ -28,7 +28,7 @@ void showAddReadingDialog(BuildContext context, Function(Reading reading) onAddR
             onPressed: () {
               final reading = int.tryParse(readingController.text.trim());
               if (reading != null && reading > 0) {
-                onAddReading(Reading(value: reading, date: DateTime.now())); // Pass the reading back
+                onAddReading(reading); // Pass the reading back
                 Navigator.of(context).pop(); // Close the dialog
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
