@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:metersystem/screens/backup/view/backupScreen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../models/meter.dart';
 import '../../../services/database_service.dart';
@@ -72,18 +71,6 @@ class _MeterListPageState extends State<MeterListPage> {
       ),
     );
   }
-
-  // void _updateMeter(Meter updatedMeter) {
-  //   // Update the meter in the list
-  //   setState(() {
-  //     final index = meters.indexWhere((m) => m.number == updatedMeter.number);
-  //     if (index != -1) {
-  //       meters[index] = updatedMeter;
-  //     }
-  //   });
-  //   _saveMeters();
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
