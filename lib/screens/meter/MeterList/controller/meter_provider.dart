@@ -1,10 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../models/meter.dart';
-import '../../../services/database_service.dart';
+
+import '../../../../models/meter.dart';
+import '../../../../services/database_service.dart';
+
 
 // StateNotifier to manage the list of meters
 class MeterNotifier extends StateNotifier<List<Meter>> {
-  MeterNotifier() : super([]);
+  MeterNotifier() : super([]) {
+    _init(); // Call the initialization method
+  }
+
+  // Initialization method to load meters
+  Future<void> _init() async {
+    await loadMeters();
+  }
 
   // Load all meters
   Future<void> loadMeters() async {

@@ -1,70 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../services/backupService.dart';
-import '../../../services/database_service.dart';
-import '../../../services/restoreService.dart';
+import '../controller/backup_restore_Provider.dart';
 
-
-class BackupRestoreScreen extends StatelessWidget {
-
-
-  const BackupRestoreScreen({ Key? key}) : super(key: key);
-
-  Future<void> _backupDatabase(BuildContext context) async {
-    final databaseService = DatabaseService();
-    final db = await databaseService.database;
-    final backupPath = await BackupService.backupDatabaseToSQL(db);
-    if (backupPath != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Backup saved at: $backupPath')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Backup failed')),
-      );
-    }
-  }  Future<void> _backupDatabaseOld(BuildContext context) async {
-    final backupPath = await BackupService.backupSharedPreferences();
-    if (backupPath != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Backup saved at: $backupPath')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Backup failed')),
-      );
-    }
-  }
-
-  Future<void> _restoreDatabase(BuildContext context) async {
-    final databaseService = DatabaseService();
-    final db = await databaseService.database;
-    await DatabaseRestoreService.restoreDatabaseFromSQL(db);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Database restored successfully')),
-    );
-  }
+class BackupRestoreScreen extends ConsumerWidget {
+  const BackupRestoreScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final message = ref.watch(backupRestoreProvider);
+    final notifier = ref.read(backupRestoreProvider.notifier);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Backup & Restore')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            if (message != null)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.green, fontSize: 16),
+                ),
+              ),
             ElevatedButton(
-              onPressed: () => _backupDatabaseOld(context),
-              child: const Text('Backup OLD Database to JSON'),
-            ),
-            const SizedBox(height: 20),  ElevatedButton(
-              onPressed: () => _backupDatabase(context),
+              onPressed: () => notifier.backupDatabase(),
               child: const Text('Backup Database to SQL'),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () => _restoreDatabase(context),
+              onPressed: () => notifier.restoreDatabase(),
               child: const Text('Restore Database'),
             ),
           ],

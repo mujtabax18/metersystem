@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:metersystem/screens/meterreading/view/meterreading.dart';
 import 'package:metersystem/services/database_service.dart';
 import 'package:metersystem/utlis/app_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 
-import 'models/meter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,7 +19,7 @@ class MeterReadingApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Multi-Meter Reading App',
+      title: 'Home Helper',
       theme: ThemeData(primarySwatch: Colors.blue),
       routerConfig: appRouter,
     );
